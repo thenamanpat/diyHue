@@ -8,8 +8,8 @@
 #include <EEPROM.h>
 
 #define light_name "WS2812 Hue Strip" //default light name
-#define lightsCount 3
-#define pixelCount 60
+#define lightsCount 25
+#define pixelCount 500
 #define transitionLeds 6 // must be even number
 
 #define button1_pin 4 // on and bri up
@@ -37,7 +37,7 @@ RgbColor green = RgbColor(0, 255, 0);
 RgbColor white = RgbColor(255);
 RgbColor black = RgbColor(0);
 
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(pixelCount);
+NeoPixelBus<NeoGrbFeature, NeoWs2813Method> strip(pixelCount);
 
 void convert_hue(uint8_t light)
 {
