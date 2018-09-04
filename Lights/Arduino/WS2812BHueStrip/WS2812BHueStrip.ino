@@ -8,9 +8,9 @@
 #include <EEPROM.h>
 
 #define light_name "WS2812 Hue Strip" //default light name
-#define lightsCount 25
-#define pixelCount 500
-#define transitionLeds 6 // must be even number
+#define lightsCount 29
+#define pixelCount 20
+#define transitionLeds 20 // must be even number
 
 #define button1_pin 4 // on and bri up
 #define button2_pin 5 // off and bri down
