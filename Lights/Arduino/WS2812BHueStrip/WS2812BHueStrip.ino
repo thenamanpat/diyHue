@@ -8,13 +8,28 @@
 #include <EEPROM.h>
 
 #define light_name "WS2812 Hue Strip" //default light name
-#define lightsCount 29
-#define pixelCount 20
+#define lightsCount 10
+#define pixelCount 600
 #define transitionLeds 20 // must be even number
 
 #define button1_pin 4 // on and bri up
 #define button2_pin 5 // off and bri down
 #define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
+
+
+//Temperature setup
+#include "DHT.h"
+#define DHTPIN 4     // what digital pin the DHT22 is conected to
+#define DHTTYPE DHT22   // there are multiple kinds of DHT sensors
+DHT dht(DHTPIN, DHTTYPE);
+
+const boolean IS_METRIC = true;
+
+unsigned long long int timeSinceLastRead = 0;
+unsigned long long int timeTempInterval = 600*1000; //milli seconds
+
+const char* host = "api.thingspeak.com";
+const char* THINGSPEAK_API_KEY = "KDZDY9JALS94S7UH";
 
 // if you want to setup static ip uncomment these 3 lines and line 326
 //IPAddress strip_ip ( 192,  168,   10,  95);
@@ -771,4 +786,83 @@ void loop() {
     lightEngine();
   }
   entertainment();
+
+  // Report every timeTempInterval milli-seconds.
+  if(timeSinceLastRead > timeTempInterval) {
+    // Reading temperature or humidity takes about 250 milliseconds!
+    // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+    float h = dht.readHumidity();
+    // Read temperature as Celsius (the default)
+    float t = dht.readTemperature();
+    // Read temperature as Fahrenheit (isFahrenheit = true)
+    float f = dht.readTemperature(true);
+
+    // Check if any reads failed and exit early (to try again).
+    if (isnan(h) || isnan(t) || isnan(f)) {
+      Serial.println("Failed to read from DHT sensor!");
+      timeSinceLastRead = 0;
+      return;
+    }
+
+    // Compute heat index in Fahrenheit (the default)
+    float hif = dht.computeHeatIndex(f, h);
+    // Compute heat index in Celsius (isFahreheit = false)
+    float hic = dht.computeHeatIndex(t, h, false);
+
+    Serial.print("Humidity: ");
+    Serial.print(h);
+    Serial.print(" %\t");
+    Serial.print("Temperature: ");
+    Serial.print(t);
+    Serial.print(" *C ");
+    Serial.print(f);
+    Serial.print(" *F\t");
+    Serial.print("Heat index: ");
+    Serial.print(hic);
+    Serial.print(" *C ");
+    Serial.print(hif);
+    Serial.println(" *F");
+    
+    // Use WiFiClient class to create TCP connections
+    WiFiClient client;
+    const int httpPort = 88;
+    if (!client.connect(host, httpPort)) {
+      Serial.println("connection failed");
+      return;
+    }
+    
+    // We now create a URI for the request
+    String url = "/update?api_key=";
+    url += THINGSPEAK_API_KEY;
+    url += "&field1=";
+    url += String(t);
+    url += "&field2=";
+    url += String(h);
+    
+    Serial.print("Requesting URL: ");
+    Serial.println(url);
+    
+    // This will send the request to the server
+    client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                 "Host: " + host + "\r\n" + 
+                 "Connection: close\r\n\r\n");
+    delay(10);
+    while(!client.available()){
+//      delay(100);
+      Serial.print(".");
+    }
+    // Read all the lines of the reply from server and print them to Serial
+    while(client.available()){
+      String line = client.readStringUntil('\r');
+      Serial.print(line);
+    }
+    
+    Serial.println();
+    Serial.println("closing connection");
+
+    
+
+    timeSinceLastRead = 0;
+  }
+  timeSinceLastRead += 1
 }
