@@ -7,7 +7,7 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
-#define light_name "WS2812 Hue Strip" //default light name
+#define light_name "Temp Hue Strip" //default light name
 #define lightsCount 10
 #define pixelCount 600
 #define transitionLeds 20 // must be even number
